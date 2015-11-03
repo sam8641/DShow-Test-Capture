@@ -154,10 +154,10 @@ DWORD getPitch(OUR_FORMATS format, DWORD width)
 	case FORMATS_AYUV:
 		return width*4;
 	case FORMATS_RGB24:
-		return width*3;
+		return (width*3 + 3) & ~3;
 	case FORMATS_RGB16_565:
 	case FORMATS_RGB16_555:
-		return width*2;
+		return (width*2 + 3) & ~3;
 	case FORMATS_YUY2:
 	case FORMATS_UYVY:
 	case FORMATS_YVYU:
@@ -172,6 +172,8 @@ DWORD getPitch(OUR_FORMATS format, DWORD width)
 		return ((width + 1) & ~1);
 	case FORMATS_YVU9:
 		return ((width + 3) & ~3);
+	case FORMATS_RGB8:
+		return (width + 3) & ~3;
 	default: return width;
 	}
 }
