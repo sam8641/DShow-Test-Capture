@@ -193,8 +193,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -269,8 +271,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\BaseClasses"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -339,6 +343,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\memalloc.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\output.cpp"
 				>
 			</File>
@@ -357,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\memalloc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\output.h"
 				>
 			</File>
@@ -370,258 +382,6 @@
 		<Filter
 			Name="BaseClasses"
 			>
-			<File
-				RelativePath="..\..\BaseClasses\amextra.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\amextra.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\amfilter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\amfilter.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\amvideo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\cache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\combase.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\combase.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\cprop.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\cprop.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\ctlutil.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\ctlutil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\ddmm.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\ddmm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\dllentry.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\dllsetup.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\dllsetup.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\dsschedule.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\fourcc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\measure.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\msgthrd.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\mtype.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\mtype.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\outputq.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\outputq.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\pstream.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\pstream.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\pullpin.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\pullpin.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\refclock.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\refclock.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\reftime.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\renbase.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\renbase.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\schedule.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\schedule.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\seekpt.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\seekpt.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\source.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\source.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\streams.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\strmctl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\strmctl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\sysclock.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\sysclock.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\transfrm.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\transfrm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\transip.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\transip.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\videoctl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\videoctl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\vtrans.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\vtrans.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\winctrl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\winctrl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\winutil.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\winutil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxdebug.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxdebug.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxlist.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxlist.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxutil.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\BaseClasses\wxutil.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

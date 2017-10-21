@@ -25,15 +25,69 @@
 
 
 class CFilter1;
+class COutputPin1;
+
+class Filter1EnumMediaTypes : public IEnumMediaTypes
+{
+	COutputPin1 *pin;
+	long refCount;
+	unsigned int pos;
+public:
+	Filter1EnumMediaTypes(COutputPin1 *pinIn);
+	~Filter1EnumMediaTypes();
+	// IUnknown
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppv);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	// IEnumMediaTypes
+	STDMETHODIMP Next(ULONG AM_MEDIA_TYPEs, AM_MEDIA_TYPE **ppMediaTypes, ULONG * pcFetched);
+	STDMETHODIMP Skip(ULONG AM_MEDIA_TYPEs);
+	STDMETHODIMP Reset();
+	STDMETHODIMP Clone(IEnumMediaTypes **ppEnum);
+};
+
 
 class COutputPin1 : public IKsPropertySet,
-	public CSourceStream, public IAMStreamConfig,
-	public ISpecifyPropertyPages
+	public IAMStreamConfig,
+	public ISpecifyPropertyPages,
+	public IPin, public IQualityControl
 {
+	LONGLONG m_frametime;
+
+	CFilter1 *filter;
+	IPin *connectedPin;
+	IMemInputPin *connectedMemInputPin;
+	IMemAllocator *memAlloc;
+	HANDLE mutex;
+	HANDLE threadEvent;
+	HANDLE threadWaitingEvent;
+	HANDLE thread1;
+
+	long refCount;
+	int m_iImageHeight;
+	int m_iImageWidth;
+	int m_iImagePitch;
+	int m_iRepeatTime;				// Time in msec between frames
+	int m_iDefaultRepeatTime;	// Initial m_iRepeatTime
+
+	int m_preferredFormat;
+	unsigned int framecount;
+	bool render;
+	bool exitnow;
+	bool threadWaiting;
+
+	AM_MEDIA_TYPE m_mt;
+
+	char text8x8[2048];
+
+	// rewrite?
+	//CCritSec m_cSharedState;
+	REFERENCE_TIME m_rtSampleTime;
+
 
 public:
 
-	COutputPin1(HRESULT *phr, CFilter1 *pParent, LPCWSTR pPinName);
+	COutputPin1(CFilter1 *pParent);
 	~COutputPin1();
 
 	// Draws test patterns
@@ -43,71 +97,75 @@ public:
 	HRESULT DecideBufferSize(IMemAllocator *pIMemAlloc,
 							ALLOCATOR_PROPERTIES *pProperties);
 
-	// Set the agreed media type, and set up the necessary ball parameters
-	HRESULT SetMediaType(const CMediaType *pMediaType);
+	HRESULT SetMediaType(const AM_MEDIA_TYPE *pMediaType);
 
-	HRESULT CheckMediaType(const CMediaType *pMediaType);
-	HRESULT GetMediaType(int iPosition, CMediaType *pmt);
+	HRESULT CheckMediaType(const AM_MEDIA_TYPE *pMediaType);
+	HRESULT GetMediaType(int iPosition, AM_MEDIA_TYPE *pmt);
 
-	// Resets the stream time to zero
-	HRESULT OnThreadCreate(void);
+	HRESULT renderOneFrame();
+	DWORD threadCreated1(void);
+	HRESULT run(void);
+	HRESULT pause(void);
+	HRESULT stop_nolock(void);
+	HRESULT stop(void);
 
-	// Quality control notifications sent to us
+	// IUnknown
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppv);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+
+	// IQualityControl
 	STDMETHODIMP Notify(IBaseFilter * pSender, Quality q);
+	STDMETHODIMP SetSink(IQualityControl * piqc);
 
-	DECLARE_IUNKNOWN;
+	STDMETHODIMP getAllocatorFromPin(IPin *pPin);
+	// IPin methods
+	STDMETHODIMP Connect(IPin *pReceivePin, const AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP Connect_part2(IPin *pReceivePin, AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP ReceiveConnection(IPin *connector, const AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP Disconnect();
+	STDMETHODIMP ConnectedTo(IPin **pPin);
+	STDMETHODIMP ConnectionMediaType(AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP QueryPinInfo(PIN_INFO *pInfo);
+	STDMETHODIMP QueryDirection(PIN_DIRECTION *pPinDir);
+	STDMETHODIMP QueryId(LPWSTR *lpId);
+	STDMETHODIMP QueryAccept(const AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP EnumMediaTypes(IEnumMediaTypes **ppEnum);
+	STDMETHODIMP QueryInternalConnections(IPin* *apPin, ULONG *nPin);
+	STDMETHODIMP EndOfStream();
 
-STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, void ** ppv);
+	STDMETHODIMP BeginFlush();
+	STDMETHODIMP EndFlush();
+	STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 
 
 // CSourceStream
-	HRESULT STDMETHODCALLTYPE Set(REFGUID guidPropSet, DWORD dwPropID,
+	STDMETHODIMP Set(REFGUID guidPropSet, DWORD dwPropID,
 		__in_bcount(cbInstanceData)  LPVOID pInstanceData, DWORD cbInstanceData,
 		__in_bcount(cbPropData)  LPVOID pPropData, DWORD cbPropData);
 		
-	HRESULT STDMETHODCALLTYPE Get(REFGUID guidPropSet, DWORD dwPropID,
+	STDMETHODIMP Get(REFGUID guidPropSet, DWORD dwPropID,
 		__in_bcount(cbInstanceData)  LPVOID pInstanceData, DWORD cbInstanceData,
 		__out_bcount_part(cbPropData, *pcbReturned)  LPVOID pPropData, DWORD cbPropData,
 		__out  DWORD *pcbReturned);
 		
-	HRESULT STDMETHODCALLTYPE QuerySupported(REFGUID guidPropSet,DWORD dwPropID,
+	STDMETHODIMP QuerySupported(REFGUID guidPropSet,DWORD dwPropID,
 		__out  DWORD *pTypeSupport);
 
 // IAMStreamConfig
-	HRESULT STDMETHODCALLTYPE SetFormat(AM_MEDIA_TYPE *pmt);
+	STDMETHODIMP SetFormat(AM_MEDIA_TYPE *pmt);
 		
-	HRESULT STDMETHODCALLTYPE GetFormat(__out  AM_MEDIA_TYPE **ppmt);
+	STDMETHODIMP GetFormat(__out  AM_MEDIA_TYPE **ppmt);
 		
-	HRESULT STDMETHODCALLTYPE GetNumberOfCapabilities(__out int *piCount, __out int *piSize);
+	STDMETHODIMP GetNumberOfCapabilities(__out int *piCount, __out int *piSize);
 	
-	HRESULT STDMETHODCALLTYPE GetStreamCaps(int iIndex,
+	STDMETHODIMP GetStreamCaps(int iIndex,
 			__out  AM_MEDIA_TYPE **ppmt, __out  BYTE *pSCC);
 
 
 // ISpecifyPropertyPages
-	HRESULT STDMETHODCALLTYPE GetPages(__RPC__out CAUUID *pPages);
-
-private:
-
-	int m_iImageHeight;
-	int m_iImageWidth;
-	int m_iImagePitch;
-	int m_iRepeatTime;				// Time in msec between frames
-	int m_iDefaultRepeatTime;	// Initial m_iRepeatTime
-
-	PALETTEENTRY m_Palette[256];
+	STDMETHODIMP GetPages(__RPC__out CAUUID *pPages);
 
 
-	CCritSec m_cSharedState;
-	CRefTime m_rtSampleTime;
-	LONGLONG m_frametime;
-
-	void SetPaletteEntries(unsigned int color, unsigned char index);
-
-	int m_preferredFormat;
-
-	unsigned int framecount;
-
-	char text8x8[2048];
 };
 	
