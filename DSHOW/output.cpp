@@ -71,6 +71,7 @@ enum OUR_FORMATS
 	FORMATS_NV12, // 4:2:0, Y,U+V
 	FORMATS_NV21, // 4:2:0, Y,V+U
 	FORMATS_NV16, // 4:2:0, Y,U+V
+	FORMATS_NV11, // 4:1:1, Y,U+V
 	FORMATS_444P, // 4:4:4, Y,U,V, same as I444
 	FORMATS_440P, // 4:4:0, Y,U,V
 	FORMATS_422P, // 4:2:2, Y,U,V, same as I422
@@ -81,8 +82,11 @@ enum OUR_FORMATS
 	FORMATS_Y416, // AVYU 16 bit, total of 64 bit
 	FORMATS_Y410, // AVYU 10 bit with 2 bit alpha, total of 32 bit
 	FORMATS_Y216, // 4:2:2 YUYV 16 bit
+	FORMATS_Y210, // 4:2:2 YUYV 16 bit, lower 5 bits are zero
 	FORMATS_P216, // 4:2:2 y,u+v 16 bit
+	FORMATS_P210, // 4:2:2 y,u+v 16 bit, lower 5 bits are zero
 	FORMATS_P016, // 4:2:0 y,u+v 16 bit
+	FORMATS_P010, // 4:2:0 y,u+v 16 bit, lower 5 bits are zero
 	FORMATS_Y16,  // 16 bit gray
 	FORMATS_b16g, // 16 bit gray swap
 	FORMATS_RGB48, // (RGB0) 16 bit RGB, total of 48 bit
@@ -125,7 +129,6 @@ enum OUR_FORMATS
 	FORMATS_IUYV,  // interlaced UYVY
 	FORMATS_IY41,  // interlaced Y41P
 	FORMATS_M420,  // 4:2:0, Y,U+V vertically packed: YYYY,YYYY,UVUV
-		// data[0] top field Y, data[1] UVUV, data[2] bottom field Y	
 
 	FORMATS_COUNT
 };
@@ -158,6 +161,7 @@ OUR_FORMATS Guid_to_our_format(const GUID *SubType)
 		case '21VN': return FORMATS_NV12;
 		case '12VN': return FORMATS_NV21;
 		case '61VN': return FORMATS_NV16;
+		case '11VN': return FORMATS_NV11;
 		case 'CYDH': return FORMATS_HDYC;
 		case 'P444': return FORMATS_444P;
 		case 'P044': return FORMATS_440P;
@@ -169,8 +173,11 @@ OUR_FORMATS Guid_to_our_format(const GUID *SubType)
 		case '614Y': return FORMATS_Y416;
 		case '014Y': return FORMATS_Y410;
 		case '612Y': return FORMATS_Y216;
+		case '012Y': return FORMATS_Y210;
 		case '612P': return FORMATS_P216;
+		case '012P': return FORMATS_P210;
 		case '610P': return FORMATS_P016;
+		case '010P': return FORMATS_P010;
 		case ' 61Y': return FORMATS_Y16;
 		case 'g61b': return FORMATS_b16g;
 		case '0BGR': return FORMATS_RGB48;
@@ -258,6 +265,7 @@ void Set_guid_using_format(OUR_FORMATS format, GUID &g)
 	case FORMATS_NV12: g.Data1 = '21VN'; break;
 	case FORMATS_NV21: g.Data1 = '12VN'; break;
 	case FORMATS_NV16: g.Data1 = '61VN'; break;
+	case FORMATS_NV11: g.Data1 = '11VN'; break;
 	case FORMATS_444P: g.Data1 = 'P444'; break;
 	case FORMATS_440P: g.Data1 = 'P044'; break;
 	case FORMATS_422P: g.Data1 = 'P224'; break;
@@ -268,8 +276,11 @@ void Set_guid_using_format(OUR_FORMATS format, GUID &g)
 	case FORMATS_Y416: g.Data1 = '614Y'; break;
 	case FORMATS_Y410: g.Data1 = '014Y'; break;
 	case FORMATS_Y216: g.Data1 = '612Y'; break;
+	case FORMATS_Y210: g.Data1 = '012Y'; break;
 	case FORMATS_P216: g.Data1 = '612P'; break;
+	case FORMATS_P210: g.Data1 = '012P'; break;
 	case FORMATS_P016: g.Data1 = '610P'; break;
+	case FORMATS_P010: g.Data1 = '010P'; break;
 	case FORMATS_Y16: g.Data1 = ' 61Y'; break;
 	case FORMATS_b16g: g.Data1 = 'g61b'; break;
 	case FORMATS_RGB48: g.Data1 = '0BGR'; break;
@@ -358,8 +369,11 @@ const char *our_format_to_text(OUR_FORMATS type)
 	case FORMATS_Y416: return "Y416";
 	case FORMATS_Y410: return "Y410";
 	case FORMATS_Y216: return "Y216";
+	case FORMATS_Y210: return "Y210";
 	case FORMATS_P216: return "P216";
+	case FORMATS_P210: return "P210";
 	case FORMATS_P016: return "P016";
+	case FORMATS_P010: return "P010";
 	case FORMATS_Y16: return "Y16";
 	case FORMATS_b16g: return "g61b";
 	case FORMATS_RGB48: return "RGB48";
@@ -446,6 +460,7 @@ DWORD getPitch(OUR_FORMATS format, DWORD width)
 	case FORMATS_ARGB16_4444:
 		return (width*2 + 3) & ~3;
 	case FORMATS_Y216:
+	case FORMATS_Y210:
 		return ((width + 1) & ~1)*4;
 	case FORMATS_v308:
 		return width*3;
@@ -453,12 +468,12 @@ DWORD getPitch(OUR_FORMATS format, DWORD width)
 	case FORMATS_UYVY:
 	case FORMATS_YVYU:
 	case FORMATS_HDYC:
-	case FORMATS_P216:
-	case FORMATS_P016:
-	case FORMATS_Y31016:
-	case FORMATS_Y31116:
 	case FORMATS_IUYV:
 		return ((width + 1) & ~1)*2;
+	case FORMATS_P216:
+	case FORMATS_P210:
+	case FORMATS_P016:
+	case FORMATS_P010:
 	case FORMATS_RGB16_565f:
 	case FORMATS_RGB16_555f:
 	case FORMATS_RGB16_444f:
@@ -466,28 +481,23 @@ DWORD getPitch(OUR_FORMATS format, DWORD width)
 	case FORMATS_b16g:
 	case FORMATS_Y16_F:
 	case FORMATS_Y30016:
+	case FORMATS_Y31016:
+	case FORMATS_Y31116:
 	case FORMATS_GBRP16:
 	case FORMATS_BGGR16:
 	case FORMATS_RGGB16:
 	case FORMATS_GBRG16:
 	case FORMATS_GRBG16:
 		return width*2;
-	case FORMATS_I420:
-	case FORMATS_I422:
-	case FORMATS_YV12:
-	case FORMATS_NV12:
-	case FORMATS_NV21:
-	case FORMATS_NV16:
-	case FORMATS_IYUV:
 	case FORMATS_IMC1:
 	case FORMATS_IMC2:
 	case FORMATS_IMC3:
 	case FORMATS_IMC4:
 		return ((width + 1) & ~1);
-	case FORMATS_440P:
-	case FORMATS_411P:
-	case FORMATS_YUV9:
-	case FORMATS_YVU9:
+	//case FORMATS_440P:
+	//case FORMATS_411P:
+	//case FORMATS_YUV9:
+	//case FORMATS_YVU9:
 	case FORMATS_CLJR:
 	case FORMATS_RGB8:
 		return (width + 3) & ~3;
@@ -500,25 +510,8 @@ DWORD getImageHeightSize(OUR_FORMATS format, DWORD pitch, DWORD height)
 {
 	switch(format)
 	{
-	case FORMATS_I420:
-	case FORMATS_YV12:
-	case FORMATS_NV12:
-	case FORMATS_NV21:
-	case FORMATS_P016:
-	case FORMATS_Y31116:
-	case FORMATS_IYUV:
-		return pitch * ((((height + 1) & ~1) * 3 + 1) >> 1);  //   3/2
 	case FORMATS_M420:
 		return pitch * ((height + 1) >> 1);  //   1/2, align by 2
- 	case FORMATS_411P:
-		return pitch * ((height * 3 + 1) >> 1);  //   3/2
-	case FORMATS_I422:
-	case FORMATS_YV16:
-	case FORMATS_NV16:
-	case FORMATS_422P:
-	case FORMATS_P216:
-	case FORMATS_Y31016:
-		return pitch * height * 2;
 	case FORMATS_IMC1:
 	case FORMATS_IMC3:
 		return (((((height * 3) / 2) + 15) & ~15) + ((height/2 + 15) & ~15)) * pitch;
@@ -526,7 +519,7 @@ DWORD getImageHeightSize(OUR_FORMATS format, DWORD pitch, DWORD height)
 	case FORMATS_IMC4:
 		return (((((height * 3) / 2) + 15) & ~15)) * pitch;
 	case FORMATS_440P:
-		return pitch * ((height + 1) & ~1) * 2;
+		return pitch * (((height + 1) & ~1) + height);
 	case FORMATS_I444:
 	case FORMATS_YV24:
 	case FORMATS_444P:
@@ -536,7 +529,29 @@ DWORD getImageHeightSize(OUR_FORMATS format, DWORD pitch, DWORD height)
 		return pitch * height * 3;
 	case FORMATS_YUV9:
 	case FORMATS_YVU9:
-		return pitch * ((((height + 3) & ~3) * 9 + 7) >> 3);  //   1 + 1/8
+		return pitch * height + ((pitch + 3) >> 2) * ((height + 3) >> 2) * 2;
+	case FORMATS_P216:
+	case FORMATS_P210:
+	case FORMATS_Y31016:
+		return (pitch + ((pitch + 3) & ~3)) * height;
+	case FORMATS_P016:
+	case FORMATS_P010:
+	case FORMATS_Y31116:
+		return pitch * height + ((pitch + 3) & ~3) * ((height + 1) >> 1);
+	case FORMATS_I422:
+	case FORMATS_YV16:
+	case FORMATS_NV16:
+	case FORMATS_422P:
+		return (pitch + ((pitch + 1) & ~1)) * height;
+	case FORMATS_I420:
+	case FORMATS_YV12:
+	case FORMATS_NV12:
+	case FORMATS_NV21:
+	case FORMATS_IYUV:
+		return pitch * height + ((pitch + 1) & ~1) * ((height + 1) >> 1);
+ 	case FORMATS_411P:
+ 	case FORMATS_NV11:
+		return (pitch + ((pitch + 3) >> 2)*2) * height;
 	}
 	return pitch * height;
 }
@@ -678,7 +693,7 @@ COutputPin1::COutputPin1(CFilter1 *pParent) :
 {
 	refCount = 1;
 	m_frametime = (((LONGLONG)m_iDefaultRepeatTime) * 10000);
-	m_preferredFormat = FORMATS_CLJR;
+	m_preferredFormat = FORMATS_RGB32;
 	//CAutoLock cAutoLock(&m_cSharedState);
 
 	filter = pParent;
@@ -1004,7 +1019,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 	}
 	case FORMATS_IUYV:
 	{
-		BYTE *pData2 = &pData[(height >> 1)*pitch];
+		BYTE *pData2 = &pData[((height+1) >> 1)*pitch];
 		info.drawCharFunc = drawChar16; info.bytes = 2;
 		info.add = (0x00010001)*128; info.mask = 0x01000100*255;
 		info.ptr_offset = (intptr_t)pData2 - (intptr_t)pData;
@@ -1022,7 +1037,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 	case FORMATS_IMC3:
 	case FORMATS_IMC4:
 	{
-		int pitch2 = pitch >> 1;
+		int pitch2 = (pitch+1) >> 1;
 		int height2 = (height+1) >> 1;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height2];
@@ -1053,7 +1068,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 	case FORMATS_YV16:
 	case FORMATS_422P:
 	{
-		int pitch2 = pitch >> 1;
+		int pitch2 = (pitch+1) >> 1;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height];
 		if(format == FORMATS_YV16)
@@ -1089,17 +1104,24 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 	}
 	case FORMATS_411P:
 	{
-		int pitch2 = pitch >> 2;
+		int pitch2 = (pitch+3) >> 2;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height];
 		drawIntinsityLayer8(pData, pitch, height, width1, width2, width3, width);
 		drawColorLayer8(pDatau, pDatav, pitch2, height, width1 >> 2, width2 >> 2, width3 >> 2, (width+3) >> 2);
 		break;
 	}
+	case FORMATS_NV11:
+	{
+		BYTE *pDatac = &pDataOrig[pitch*height];
+		drawIntinsityLayer8(pData, pitch, height, width1, width2, width3, width);
+		drawColorLayer8_interleaved(pDatac, ((pitch+3) >> 2) * 1, height, width1 >> 2, width2 >> 2, width3 >> 2, (width+3) >> 2, false);
+		break;
+	}
 	case FORMATS_YUV9:
 	case FORMATS_YVU9:
 	{
-		int pitch2 = pitch >> 2;
+		int pitch2 = (pitch+3) >> 2;
 		int height2 = (height+3) >> 2;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height2];
@@ -1118,7 +1140,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		BYTE *pDatac = &pDataOrig[pitch*height];
 
 		drawIntinsityLayer8(pData, pitch, height, width1, width2, width3, width);
-		drawColorLayer8_interleaved(pDatac, pitch, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, format == FORMATS_NV21);
+		drawColorLayer8_interleaved(pDatac, (pitch+1) & ~1, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, format == FORMATS_NV21);
 		break;
 	}
 	case FORMATS_M420:
@@ -1128,7 +1150,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		BYTE *pDatac = &pData[pitch13*2];
 		info.ptr_offset = (intptr_t)pitch13;
 		drawIntinsityLayer8(pData, pitch, height, width1, width2, width3, width, &pData[pitch13]);
-		drawColorLayer8_interleaved(pDatac, pitch, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, format == FORMATS_NV21);
+		drawColorLayer8_interleaved(pDatac, pitch, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
 		break;
 	}
 	case FORMATS_NV16:
@@ -1136,7 +1158,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		BYTE *pDatac = &pDataOrig[pitch*height];
 
 		drawIntinsityLayer8(pData, pitch, height, width1, width2, width3, width);
-		drawColorLayer8_interleaved(pDatac, pitch, height, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
+		drawColorLayer8_interleaved(pDatac, (pitch+1) & ~1, height, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
 		break;
 	}
 	case FORMATS_Y30016:
@@ -1150,18 +1172,19 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		break;
 	}
 	case FORMATS_P216:
+	case FORMATS_P210:
 	{
 		info.drawCharFunc = drawChar16; info.bytes = 2;
 		BYTE *pDatac = &pDataOrig[pitch*height];
 
 		drawIntinsityLayer16(pData, pitch, height, width1, width2, width3, width);
-		drawColorLayer16_interleaved(pDatac, pitch, height, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
+		drawColorLayer16_interleaved(pDatac, (pitch+3) & ~3, height, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
 		break;
 	}
 	case FORMATS_Y31016:
 	{
 		info.drawCharFunc = drawChar16; info.bytes = 2;
-		int pitch2 = pitch >> 1;
+		int pitch2 = ((pitch+3) >> 2)*2;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height];
 
@@ -1170,20 +1193,21 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		break;
 	}
 	case FORMATS_P016:
+	case FORMATS_P010:
 	{
 		info.drawCharFunc = drawChar16; info.bytes = 2;
 		int height2 = (height+1) >> 1;
 		BYTE *pDatac = &pDataOrig[pitch*height];
 
 		drawIntinsityLayer16(pData, pitch, height, width1, width2, width3, width);
-		drawColorLayer16_interleaved(pDatac, pitch, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
+		drawColorLayer16_interleaved(pDatac, (pitch+3) & ~3, height2, width1 >> 1, width2 >> 1, width3 >> 1, (width+1) >> 1, false);
 		break;
 	}
 	case FORMATS_Y31116:
 	{
 		info.drawCharFunc = drawChar16; info.bytes = 2;
 		int height2 = (height+1) >> 1;
-		int pitch2 = pitch >> 1;
+		int pitch2 = ((pitch+3) >> 2)*2;
 		BYTE *pDatau = &pDataOrig[pitch*height];
 		BYTE *pDatav = &pDatau[pitch2*height2];
 
@@ -1226,6 +1250,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		break;
 	}
 	case FORMATS_Y216:
+	case FORMATS_Y210:
 		info.drawCharFunc = drawChar32; info.bytes = 4;
 		info.add = 0x8000000080000000; info.mask = 0x0000FFFF0000FFFF;
 		draw_64bit(&pData[0], pitch, width1 >> 1, height, 0x8000800000008000, 0x0000000000010000, 65536);
@@ -1253,7 +1278,7 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 		{
 		info.drawCharFunc = drawChar_Y41P; info.bytes = 0;
 		info.add = 0; info.mask = 255;
-		BYTE *pData2 = &pData[(height >> 1)*pitch];
+		BYTE *pData2 = &pData[((height+1) >> 1)*pitch];
 		info.ptr_offset = (intptr_t)pData2 - (intptr_t)pData;
 		draw_Y41P(pData, pitch, 0,      width1, height, (0x00010000 + 0x01000100) * 128, 0x00000001, 256, pData2);
 		draw_Y41P(pData, pitch, width1, width2, height, (0x01000100) * 128, 0x00000001 + 0x00010000, 256, pData2);
@@ -1781,7 +1806,7 @@ HRESULT COutputPin1::CheckMediaType(const AM_MEDIA_TYPE *pMediaType)
 
 	OUR_FORMATS format = Guid_to_our_format(SubType);
 
-	if(format == FORMATS_COUNT)
+	if(format >= FORMATS_COUNT)
 		return E_INVALIDARG;
 
 	//if(m_preferredFormat != 0 && format != m_preferredFormat) // force use of SetFormat
@@ -2053,7 +2078,7 @@ STDMETHODIMP COutputPin1::SetFormat(
 		return E_INVALIDARG;
 
 	int format = Guid_to_our_format(SubType);
-	if(format == FORMATS_COUNT)
+	if(format >= FORMATS_COUNT)
 		return E_NOTIMPL;
 
 	m_preferredFormat = format;

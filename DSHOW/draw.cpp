@@ -39,10 +39,10 @@ void draw_8bit(unsigned char *mem, int pitch, U32 w, U32 h, U32 color, U32 add, 
 		unsigned char color1 = count * y / h * add + color;
 #ifdef _M_AMD64
 		__stosq((unsigned long long *)mem1, ((unsigned long long)color1) * 0x0101010101010101, w >> 3);
-		__stosb(&mem1[w >> 3], color1, w & 7);
+		__stosb(&mem1[w & ~7], color1, w & 7);
 #else
 		__stosd((unsigned long *)mem1, ((unsigned int)color1) * 0x01010101, w >> 2);
-		__stosb(&mem1[w >> 2], color1, w & 3);
+		__stosb(&mem1[w & ~3], color1, w & 3);
 #endif
 		mem += pitch;
 		if(mem2)
