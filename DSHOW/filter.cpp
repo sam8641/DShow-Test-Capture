@@ -149,7 +149,7 @@ STDMETHODIMP Filter1ClassFactory::QueryInterface(REFIID riid, void **ppv)
 }
 
 STDMETHODIMP_(ULONG) Filter1ClassFactory::AddRef()  {return InterlockedIncrement(&refCount);}
-STDMETHODIMP_(ULONG) Filter1ClassFactory::Release() {if(!InterlockedDecrement(&refCount)) {delete this; return 0;} return refCount;}
+STDMETHODIMP_(ULONG) Filter1ClassFactory::Release() {ULONG ref = InterlockedDecrement(&refCount); if(!ref) {delete this;} return ref;}
 
 // IClassFactory
 STDMETHODIMP Filter1ClassFactory::CreateInstance(LPUNKNOWN pUnkOuter, REFIID riid, void **pv)
@@ -220,7 +220,7 @@ STDMETHODIMP Filter1EnumPins::QueryInterface(REFIID riid, void **ppv)
 }
 
 STDMETHODIMP_(ULONG) Filter1EnumPins::AddRef()  {debuglog("Filter1EnumPins AddRef"); return InterlockedIncrement(&refCount);}
-STDMETHODIMP_(ULONG) Filter1EnumPins::Release() {debuglog("Filter1EnumPins Release"); if(!InterlockedDecrement(&refCount)) {delete this; return 0;} return refCount;}
+STDMETHODIMP_(ULONG) Filter1EnumPins::Release() {debuglog("Filter1EnumPins Release"); ULONG ref = InterlockedDecrement(&refCount); if(!ref) {delete this;} return ref;}
 
 // IEnumPins
 STDMETHODIMP Filter1EnumPins::Next(ULONG cPins, IPin **ppPins, ULONG *pcFetched)
@@ -441,6 +441,7 @@ CFilter1::CFilter1()
 }
 CFilter1::~CFilter1()
 {
+	delete pin;
 	WaitForSingleObject(mutex, INFINITE);
 	if(InterlockedDecrement(&global_lock) == -1)
 		__debugbreak();
@@ -482,7 +483,7 @@ STDMETHODIMP CFilter1::QueryInterface(REFIID riid, void **ppv)
 	return NOERROR;
 }
 STDMETHODIMP_(ULONG) CFilter1::AddRef()  {return InterlockedIncrement(&refCount);}
-STDMETHODIMP_(ULONG) CFilter1::Release() {if(!InterlockedDecrement(&refCount)) {delete this; return 0;} return refCount;}
+STDMETHODIMP_(ULONG) CFilter1::Release() {ULONG ref = InterlockedDecrement(&refCount); if(!ref) {delete this;} return ref;}
 // IPersist method
 STDMETHODIMP CFilter1::GetClassID(CLSID *pClsID) {return E_NOTIMPL;}
 

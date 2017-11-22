@@ -645,7 +645,7 @@ STDMETHODIMP Filter1EnumMediaTypes::QueryInterface(REFIID riid, void **ppv)
 }
 
 STDMETHODIMP_(ULONG) Filter1EnumMediaTypes::AddRef()  {return InterlockedIncrement(&refCount);}
-STDMETHODIMP_(ULONG) Filter1EnumMediaTypes::Release() {if(!InterlockedDecrement(&refCount)) {delete this; return 0;} return refCount;}
+STDMETHODIMP_(ULONG) Filter1EnumMediaTypes::Release() {ULONG ref = InterlockedDecrement(&refCount); if(!ref) {delete this;} return ref;}
 
 // IEnumMediaTypes
 STDMETHODIMP Filter1EnumMediaTypes::Next(ULONG AM_MEDIA_TYPEs, AM_MEDIA_TYPE **ppMediaTypes, ULONG *pcFetched)
@@ -691,7 +691,7 @@ COutputPin1::COutputPin1(CFilter1 *pParent) :
 	m_iImageHeight(512),
 	m_iDefaultRepeatTime(20)
 {
-	refCount = 1;
+	refCount = 0; // Only base filter can delete this pin.
 	m_frametime = (((LONGLONG)m_iDefaultRepeatTime) * 10000);
 	m_preferredFormat = 0;//FORMATS_RGB32;
 
@@ -717,6 +717,8 @@ COutputPin1::COutputPin1(CFilter1 *pParent) :
 // Destructor
 COutputPin1::~COutputPin1()
 {
+	if(refCount != 0)
+		DebugBreak();
 	WaitForSingleObject(mutex, INFINITE);
 	if(thread1)
 		stop_nolock();
@@ -1361,8 +1363,8 @@ STDMETHODIMP COutputPin1::QueryInterface(REFIID riid, void **ppv)
 	AddRef();
 	return NOERROR;
 }
-STDMETHODIMP_(ULONG) COutputPin1::AddRef()  {return InterlockedIncrement(&refCount);}
-STDMETHODIMP_(ULONG) COutputPin1::Release() {if(!InterlockedDecrement(&refCount)) {delete this; return 0;} return refCount;}
+STDMETHODIMP_(ULONG) COutputPin1::AddRef()  {ULONG ref = InterlockedIncrement(&refCount); if(ref == 1) {filter->AddRef();} return ref;}
+STDMETHODIMP_(ULONG) COutputPin1::Release() {ULONG ref = InterlockedDecrement(&refCount); if(!ref) {filter->Release();} return ref;}
 
 // IQualityControl
 STDMETHODIMP COutputPin1::Notify(IBaseFilter * pSender, Quality q)
@@ -1380,9 +1382,9 @@ STDMETHODIMP COutputPin1::Notify(IBaseFilter * pSender, Quality q)
 		{
 			m_iRepeatTime = 1000;	// We don't go slower than 1 per second
 		}
-		else if(m_iRepeatTime<10)
+		else if(m_iRepeatTime<0)
 		{
-			m_iRepeatTime = 10;	// We don't go faster than 100/sec
+			m_iRepeatTime = 0;
 		}
 	}
 
@@ -1943,6 +1945,9 @@ DWORD COutputPin1::threadCreated1()
 		if(render)
 		{
 			renderOneFrame();
+			int sleeptime = m_iRepeatTime;
+			if(sleeptime > 0 && sleeptime < 1000)
+				Sleep(sleeptime);
 		}
 		else
 		{
@@ -2097,8 +2102,6 @@ STDMETHODIMP COutputPin1::SetFormat(
 	{
 		//m_iRepeatTime = int(10000000 / m_frametime);
 		m_iRepeatTime = int(m_frametime / 10000);
-		if(m_iRepeatTime <= 0)
-			m_iRepeatTime = 1;
 		if(m_iRepeatTime > 1000)
 			m_iRepeatTime = 1000;
 		m_iDefaultRepeatTime = m_iRepeatTime;
@@ -2179,8 +2182,8 @@ STDMETHODIMP COutputPin1::GetStreamCaps(
    pvscc->StretchTapsY = 1;
    pvscc->ShrinkTapsX = 1;
    pvscc->ShrinkTapsY = 1;
-   pvscc->MinFrameInterval = 10000; 
-   pvscc->MaxFrameInterval = 10000000; // 1 ms, or 1000 fps
+   pvscc->MinFrameInterval =     5000; // 0.5 ms
+   pvscc->MaxFrameInterval = 10000000; // 1000 ms
    pvscc->MinBitsPerSecond = 1;
    pvscc->MaxBitsPerSecond = 0x7FFFFFFF;
 
