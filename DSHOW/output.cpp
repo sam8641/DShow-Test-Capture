@@ -693,12 +693,12 @@ COutputPin1::COutputPin1(CFilter1 *pParent) :
 {
 	refCount = 1;
 	m_frametime = (((LONGLONG)m_iDefaultRepeatTime) * 10000);
-	m_preferredFormat = FORMATS_RGB32;
-	//CAutoLock cAutoLock(&m_cSharedState);
+	m_preferredFormat = 0;//FORMATS_RGB32;
 
 	filter = pParent;
 	connectedPin = NULL;
 	memAlloc = NULL;
+	connectedMemInputPin = NULL;
 	memset(&m_mt, 0, sizeof(m_mt));
 
 	readTextFile(text8x8);
@@ -720,8 +720,8 @@ COutputPin1::~COutputPin1()
 	WaitForSingleObject(mutex, INFINITE);
 	if(thread1)
 		stop_nolock();
-	//CAutoLock cAutoLock(&m_cSharedState);
 	if(connectedPin) connectedPin->Release();
+	if(connectedMemInputPin) connectedMemInputPin->Release();
 	if(memAlloc) memAlloc->Release();
 	FreeMediaType(m_mt);
 	CloseHandle(mutex);
@@ -758,7 +758,6 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 	}
 
 	{
-	//CAutoLock cAutoLockShared(&m_cSharedState);
 
 	VIDEOINFO *pvi = (VIDEOINFO *) m_mt.pbFormat;
 	OUR_FORMATS format = Guid_to_our_format(&(m_mt.subtype));
@@ -1405,10 +1404,14 @@ STDMETHODIMP COutputPin1::getAllocatorFromPin(IPin *pPin)
 		memAlloc->Release();
 		memAlloc = NULL;
 	}
+	if(connectedMemInputPin)
+	{
+		connectedMemInputPin->Release();
+		connectedMemInputPin = NULL;
+	}
 	IMemInputPin *pinMemIn = NULL;
 	if(pPin->QueryInterface(IID_IMemInputPin, (void**)&pinMemIn) != S_OK)
 		return VFW_E_NO_TRANSPORT;
-	pPin->Release(); // from QueryInterface
 
 	ALLOCATOR_PROPERTIES prop;
 	memset(&prop, 0, sizeof(prop));
@@ -1420,14 +1423,15 @@ STDMETHODIMP COutputPin1::getAllocatorFromPin(IPin *pPin)
 		memAlloc = new DShowMemAllocator();
 		//return VFW_E_NO_TRANSPORT;
 	}
-	if(DecideBufferSize(memAlloc, &prop) != S_OK)
-		return VFW_E_NO_TRANSPORT;  // need to free memAlloc
-	if(pinMemIn->NotifyAllocator(memAlloc, FALSE) != S_OK)
-		return VFW_E_NO_TRANSPORT;
-	if(memAlloc->Commit() != S_OK)
-		return VFW_E_NO_TRANSPORT;
-	connectedMemInputPin = pinMemIn;
-	return 0;
+	if(DecideBufferSize(memAlloc, &prop) == S_OK)
+		if(pinMemIn->NotifyAllocator(memAlloc, FALSE) == S_OK)
+			//if(memAlloc->Commit() != S_OK)
+			{
+				connectedMemInputPin = pinMemIn;
+				return S_OK;
+			}
+	pinMemIn->Release();
+	return VFW_E_NO_TRANSPORT;
 }
 
 // IPin methods
@@ -1522,15 +1526,19 @@ STDMETHODIMP COutputPin1::Disconnect()
 	WaitForSingleObject(mutex, INFINITE);
 	stop_nolock();
 
-	if(memAlloc)
-	{	memAlloc->Release();
-		memAlloc = NULL;
-	}
-	//connectedPin->
+	//if(memAlloc) // Possible crash, delay release.
+	//{	memAlloc->Release();
+	//	memAlloc = NULL;
+	//}
 	if(connectedPin)
 	{
 		connectedPin->Release();
 		connectedPin = NULL;
+	}
+	if(connectedMemInputPin)
+	{
+		connectedMemInputPin->Release();
+		connectedMemInputPin = NULL;
 	}
 	ReleaseMutex(mutex);
 	return S_OK;
@@ -1625,8 +1633,6 @@ HRESULT COutputPin1::GetMediaType(int iPosition, AM_MEDIA_TYPE *pmt)
 {
 	debuglog("outputpin1 GetMediaType");
 	//CheckPointer(pmt,E_POINTER);
-
-	//CAutoLock cAutoLock(m_pFilter->pStateLock());
 
 	ZeroMemory(pmt, sizeof(AM_MEDIA_TYPE));
 
@@ -1842,7 +1848,6 @@ HRESULT COutputPin1::DecideBufferSize(IMemAllocator *pAlloc,
 	//CheckPointer(pAlloc,E_POINTER);
 	//CheckPointer(pProperties,E_POINTER);
 
-	//CAutoLock cAutoLock(m_pFilter->pStateLock());
 	HRESULT hr = NOERROR;
 
 	VIDEOINFO *pvi = (VIDEOINFO *) m_mt.pbFormat;
@@ -1874,7 +1879,6 @@ HRESULT COutputPin1::DecideBufferSize(IMemAllocator *pAlloc,
 HRESULT COutputPin1::SetMediaType(const AM_MEDIA_TYPE *pMediaType)
 {
 	debuglog("outputpin1 SetMediaType");
-	//CAutoLock cAutoLock(m_pFilter->pStateLock());
 
 	//ASSERT(CheckMediaType(pMediaType) == S_OK);
 	//if(CheckMediaType(pMediaType) != S_OK)
@@ -1991,7 +1995,6 @@ HRESULT COutputPin1::stop_nolock()
 		thread1 = NULL;
 		connectedPin->EndOfStream();
 	}
-	//CAutoLock cAutoLockShared(&m_cSharedState);
 	m_rtSampleTime = 0;
 
 	// we need to also reset the repeat time in case the system

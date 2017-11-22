@@ -433,7 +433,6 @@ CFilter1::CFilter1()
 	mutex = CreateMutex(NULL, false, NULL);
 	refCount = 1;
 	//ASSERT(phr);
-	//CAutoLock cAutoLock(&m_cStateLock);
 
 	//m_paStreams = (CSourceStream **) new COutputPin1*[1];
 	pin = new COutputPin1(this);
