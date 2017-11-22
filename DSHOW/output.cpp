@@ -130,7 +130,7 @@ enum OUR_FORMATS
 	FORMATS_IY41,  // interlaced Y41P
 	FORMATS_M420,  // 4:2:0, Y,U+V vertically packed: YYYY,YYYY,UVUV
 
-	FORMATS_COUNT
+	FORMATS_COUNT,
 };
 
 // IYUV same as I420
@@ -761,6 +761,9 @@ HRESULT COutputPin1::FillBuffer(IMediaSample *pms)
 
 	VIDEOINFO *pvi = (VIDEOINFO *) m_mt.pbFormat;
 	OUR_FORMATS format = Guid_to_our_format(&(m_mt.subtype));
+	if(format >= FORMATS_COUNT)
+		return E_INVALIDARG;
+
 	//int pitch = m_iImagePitch;//pvi->bmiHeader.biWidth * (pvi->bmiHeader.biBitCount >> 3);
 	//int pitch = lDataLen / abs(pvi->bmiHeader.biHeight);
 	int pitch = getPitch(format, m_iImageWidth);
@@ -1456,7 +1459,7 @@ STDMETHODIMP COutputPin1::Connect(IPin *pReceivePin, const AM_MEDIA_TYPE *pmt)
 	else
 	{
 		int i=0;
-		while(h != S_OK)
+		while(h != S_OK && i < FORMATS_COUNT)
 		{
 			pmtIndex = 0;
 			if(GetMediaType(i, &m_mt) != S_OK)
@@ -1662,7 +1665,7 @@ HRESULT COutputPin1::GetMediaType(int iPosition, AM_MEDIA_TYPE *pmt)
 
 	switch(iPosition)
 	{
-		case FORMATS_RGB32:
+		case FORMATS_ARGB32:
 			// Return our highest quality 32bit format
 
 			// since we use RGB888 (the default for 32 bit), there is
@@ -1678,7 +1681,7 @@ HRESULT COutputPin1::GetMediaType(int iPosition, AM_MEDIA_TYPE *pmt)
 			// byte 1: r3r2r1r0g9g8g7g6
 			// byte 2: r5r4r3r2r1r1b9b8
 			// byte 3: b7b6b5b4b3b2b1b0
- 		case FORMATS_ARGB32:
+ 		case FORMATS_RGB32:
 			pvi->bmiHeader.biCompression = BI_RGB;
 			pvi->bmiHeader.biBitCount	= 32;
 			pmt->subtype = MEDIASUBTYPE_RGB32;
@@ -1788,6 +1791,9 @@ HRESULT COutputPin1::GetMediaType(int iPosition, AM_MEDIA_TYPE *pmt)
 	pmt->bFixedSizeSamples = true;
 	pmt->lSampleSize = pvi->bmiHeader.biSizeImage;
 
+	if(CheckMediaType(pmt) != S_OK)
+		DebugBreak(); // shouldn't happen
+
 	return NOERROR;
 
 }
@@ -1881,8 +1887,8 @@ HRESULT COutputPin1::SetMediaType(const AM_MEDIA_TYPE *pMediaType)
 	debuglog("outputpin1 SetMediaType");
 
 	//ASSERT(CheckMediaType(pMediaType) == S_OK);
-	//if(CheckMediaType(pMediaType) != S_OK)
-	//	return S_FALSE;
+	if(CheckMediaType(pMediaType) != S_OK)
+		return VFW_E_TYPE_NOT_ACCEPTED;
 
 	// Pass the call up to my base class
 
